@@ -21,13 +21,12 @@ cred = credentials.Certificate(
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://ev-station-test-default-rtdb.firebaseio.com/'
 })
-dir = db.reference()
+dir = [db.reference(), db.reference(), db.reference()]
 
 # 각 NodeMCU 및 jetson nano IP 주소로 스테이션 구분
-station1 = "192.168.0.21"
-station2 = "192.168.0.22"
+station1 = "192.168.0.22"
+station2 = "192.168.0.21"
 station3 = "192.168.0.23"
-station4 = "192.168.0.24"
 jetson_nano = "192.168.0.20"
 
 HOST = '192.168.0.19'
@@ -89,7 +88,7 @@ def station_threaded(client_socket, addr):
     # 각 파이어베이스 내 스테이션 db에 접근
     global db
     global dir
-    dir = db.reference('Station' + station_numb)
+    dir[station_num] = db.reference('Station' + station_numb)
 
     # RFID 플래그 지역 변수 값 초기화
     RFID_tag_match = False
@@ -109,15 +108,17 @@ def station_threaded(client_socket, addr):
 
     while True:
         #배터리 체크
-        if not battery[station_num] == -1 and not battery[station_num] == battery_temp:
+        if not battery[station_num] == battery_temp:
             battery_temp = battery[station_num]
-            print('battery : ' + str(battery_temp))
-            dir.update({'BATTERY': str(battery_temp)})
+            print('station' + station_numb + ' battery : ' + str(battery_temp))
+            dir[station_num] = db.reference('Station' + station_numb)
+            dir[station_num].update({'BATTERY': str(battery_temp)})
         if battery_temp == 100 and not over_time_flag:
             print('over parikng')
-            dir.update({'OVER_CHARGING': 'O'})
+            dir[station_num] = db.reference('Station' + station_numb)
+            dir[station_num].update({'OVER_CHARGING': 'O'})
             time.sleep(1)
-            dir.update({'OVER_CHARGING': 'X'})
+            dir[station_num].update({'OVER_CHARGING': 'X'})
             lock.acquire()
             check_car[station_num] = False
             lock.release()
@@ -181,15 +182,15 @@ def station_threaded(client_socket, addr):
 
                 # 차량 출차 시간
                 now_time_string = time.strftime('%Y-%m-%d %I:%M:%S %p', time.localtime())
-                dir.update({'OUT_TIME': now_time_string})
+                dir[station_num].update({'OUT_TIME': now_time_string})
 
                 # 결제 금액 계산
-                dir = db.reference('Station'+station_numb+'/IN_TIME')
-                in_time_string = dir.get()
-                dir = db.reference('Station'+station_numb+'/OUT_TIME')
-                out_time_string = dir.get()
+                dir[station_num] = db.reference('Station'+station_numb+'/IN_TIME')
+                in_time_string = dir[station_num].get()
+                dir[station_num] = db.reference('Station'+station_numb+'/OUT_TIME')
+                out_time_string = dir[station_num].get()
 
-                dir = db.reference('Station' + station_numb)
+                dir[station_num] = db.reference('Station' + station_numb)
 
                 in_time = datetime.datetime.strptime(
                     in_time_string, '%Y-%m-%d %I:%M:%S %p')
@@ -206,12 +207,12 @@ def station_threaded(client_socket, addr):
                     time_interval = out_time - in_time
                     payment = time_interval.seconds * 300
                 payment_string = str(payment)
-                dir.update({'PAYMENT': payment_string})  # 초당 300원
+                dir[station_num].update({'PAYMENT': payment_string})  # 초당 300원
 
                 # 해당 스테이션 Firebase 값 변경
-                dir.update({'USING': 'X'})  # 'Station'+station_numb+'/'+
-                dir.update({'CAR_NAME': 'X'})
-                dir.update({'OVER_CHARGING': 'X'})
+                dir[station_num].update({'USING': 'X'})  # 'Station'+station_numb+'/'+
+                dir[station_num].update({'CAR_NAME': 'X'})
+                dir[station_num].update({'OVER_CHARGING': 'X'})
 
                 # mysql 접근
                 mysql_db = pymysql.connect(host="192.168.0.20", user="HODU_EV",
@@ -241,8 +242,9 @@ def station_threaded(client_socket, addr):
                 mysql_db.commit()
                 mysql_db.close()
 
-                dir.update({'IN_TIME': '-'})
-                dir.update({'OUT_TIME': '-'})
+                dir[station_num].update({'IN_TIME': '-'})
+                dir[station_num].update({'OUT_TIME': '-'})
+                dir[station_num].update({'BATTERY': '-1'})
 
             # 각 NCU 보드에 'X' 전송 (서보모터 제어)
             client_socket.send('R'.encode('utf-8'))
@@ -277,11 +279,11 @@ def station_threaded(client_socket, addr):
             now_time_string = time.strftime('%Y-%m-%d %I:%M:%S %p', now)
 
             # 파이어베이스 값 수정 (충전차량 들어옴)
-            dir = db.reference('Station'+station_numb)
-            dir.update({'USING': 'O'})
-            dir.update({'CAR_NAME': row})
-            dir.update({'IN_TIME': now_time_string})
-            dir.update({'PAYMENT': '0'})
+            dir[station_num] = db.reference('Station'+station_numb)
+            dir[station_num].update({'USING': 'O'})
+            dir[station_num].update({'CAR_NAME': row})
+            dir[station_num].update({'IN_TIME': now_time_string})
+            dir[station_num].update({'PAYMENT': '0'})
 
             count = False
     client_socket.close()
