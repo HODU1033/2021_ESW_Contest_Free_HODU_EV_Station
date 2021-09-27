@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "144138062009",
+    "firebase_url": "https://ev-station-test-default-rtdb.firebaseio.com",
+    "project_id": "ev-station-test",
+    "storage_bucket": "ev-station-test.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144138062009:android:c1fb16425c347a859bb368",
+        "android_client_info": {
+          "package_name": "com.example.ev_android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "144138062009-v3j5aq3lki3rqkigfvfee5h38m6to526.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqEvWITcPOvF9vEDauTAaTNCmz0BGO_O8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "144138062009-v3j5aq3lki3rqkigfvfee5h38m6to526.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
