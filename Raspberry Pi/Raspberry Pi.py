@@ -58,7 +58,6 @@ def scarecrow_car(station_num):
         if check_car[station_num]:
             lock.acquire()
             battery[station_num] = random.randrange(10, 60)
-            #battery[station_num] = 98
             lock.release()
             while check_car[station_num] and battery[station_num] <= 100:
                 time.sleep(3)
@@ -70,7 +69,7 @@ def scarecrow_car(station_num):
             lock.release()
 
 # 스테이션별로 상황을 판단하게 됩니다.
-def NodeMCU_station_thread(client_socket, addr):
+def station_threaded(client_socket, addr):
     # 클라이언트가 접속을 끊을 때 까지 반복합니다.
     if addr[0] == station1:
         station_numb = '1'
@@ -109,19 +108,6 @@ def NodeMCU_station_thread(client_socket, addr):
     start_new_thread(scarecrow_car, (station_num, ))
 
     while True:
-        try:
-            data_byte = client_socket.recv(1024)
-            if not data_byte:
-                print('Disconnected by ' + addr[0], ':', addr[1])
-                break
-            data_string = data_byte.decode('utf-8')
-            print('Received from [Station - ' + station_numb, '] :', data_string)
-        except ConnectionResetError as e:
-            print('Disconnected by ' + addr[0], ':', addr[1])
-            break
-        except socket.timeout:
-            data_string = '.'
-
         #배터리 체크
         if not battery[station_num] == -1 and not battery[station_num] == battery_temp:
             battery_temp = battery[station_num]
@@ -138,6 +124,19 @@ def NodeMCU_station_thread(client_socket, addr):
             over_time_flag = True
             over_time = datetime.datetime.strptime(
                 time.strftime('%Y-%m-%d %I:%M:%S %p', time.localtime()), '%Y-%m-%d %I:%M:%S %p')
+
+        try:
+            data_byte = client_socket.recv(1024)
+            if not data_byte:
+                print('Disconnected by ' + addr[0], ':', addr[1])
+                break
+            data_string = data_byte.decode('utf-8')
+            print('Received from [Station - ' + station_numb, '] :', data_string)
+        except ConnectionResetError as e:
+            print('Disconnected by ' + addr[0], ':', addr[1])
+            break
+        except socket.timeout:
+            data_string = '.'
 
         # RFID
         if data_string.startswith('RFID-'):
@@ -288,7 +287,7 @@ def NodeMCU_station_thread(client_socket, addr):
     client_socket.close()
 
 # 젯슨 나노 쓰레드
-def jetson_thread(client_socket, addr):
+def jetson_threaded(client_socket, addr):
     print('Connected by : [IP - ', addr[0],
           ', PORT-', addr[1], '] / Jetson Nano')
     client_socket.settimeout(1)
@@ -341,6 +340,6 @@ while True:
     # accept()의 반환값은 (데이터를 주고 받을 수 있는) 소켓 객체, 바인드 된 주소
     client_socket, addr = server_socket.accept()
     if addr[0] == jetson_nano:
-        start_new_thread(jetson_thread, (client_socket, addr))
+        start_new_thread(jetson_threaded, (client_socket, addr))
     else:
-        start_new_thread(NodeMCU_station_thread, (client_socket, addr))
+        start_new_thread(station_threaded, (client_socket, addr))
