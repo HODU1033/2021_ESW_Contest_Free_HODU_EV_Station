@@ -68,7 +68,7 @@ def scarecrow_car(station_num):
             lock.release()
 
 # 스테이션별로 상황을 판단하게 됩니다.
-def station_threaded(client_socket, addr):
+def NodeMCU_station_thread(client_socket, addr):
     # 클라이언트가 접속을 끊을 때 까지 반복합니다.
     if addr[0] == station1:
         station_numb = '1'
@@ -289,7 +289,7 @@ def station_threaded(client_socket, addr):
     client_socket.close()
 
 # 젯슨 나노 쓰레드
-def jetson_threaded(client_socket, addr):
+def jetson_thread(client_socket, addr):
     print('Connected by : [IP - ', addr[0],
           ', PORT-', addr[1], '] / Jetson Nano')
     client_socket.settimeout(1)
@@ -342,6 +342,6 @@ while True:
     # accept()의 반환값은 (데이터를 주고 받을 수 있는) 소켓 객체, 바인드 된 주소
     client_socket, addr = server_socket.accept()
     if addr[0] == jetson_nano:
-        start_new_thread(jetson_threaded, (client_socket, addr))
+        start_new_thread(jetson_thread, (client_socket, addr))
     else:
-        start_new_thread(station_threaded, (client_socket, addr))
+        start_new_thread(NodeMCU_station_thread, (client_socket, addr))

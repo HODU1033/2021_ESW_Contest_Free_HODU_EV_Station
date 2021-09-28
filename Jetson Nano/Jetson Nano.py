@@ -36,7 +36,7 @@ print('Connected to Server!')
 
  
 
-def threaded(YOLO_thread, client_socket):
+def YOLO_thread(YOLO_thread, client_socket):
 
 	global station_request
 
@@ -192,7 +192,7 @@ def threaded(YOLO_thread, client_socket):
 
 #thread start
 
-start_new_thread(threaded, (1, client_socket))
+start_new_thread(YOLO_thread, (1, client_socket))
 
  
 
